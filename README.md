@@ -30,8 +30,8 @@ The current repository includes the foundation for OXIN, focusing on:
 **Getting Started:**
 
 1. **Clone the Repository:**  Use Git to clone the repository to your local machine: `git clone https://github.com/Qyuzet/OXIN-Omni-X-Interchange-Network.git`
-2. **Set up Dependencies:**  Install the necessary Java libraries and dependencies (refer to the `pom.xml` file).  [**Provide specific instructions for installing dependencies, if needed.**]
-3. **Run the Code:**  Follow the instructions provided in the `README.md` to compile and run the OXIN code. [**Provide specific instructions for compiling and running the code.**]
+2. **Set up Dependencies:**  Please do _'clean & build'_ to install the necessary Java libraries and dependencies, it will automatically refer to the `pom.xml` file.  
+3. **Run the Code:**  Follow the instructions provided in the `README.md` to compile and run the OXIN code _(coming soon)_. 
 
 **Contributing:**
 
