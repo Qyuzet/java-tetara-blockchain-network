@@ -37,7 +37,7 @@ The current repository includes the foundation for OXIN, focusing on:
 
 We welcome contributions to the development of OXIN! We believe in the power of collaboration and are excited to grow the OXIN community. Here's how you can get involved:
 
-* **Join the Team:** If you're passionate about blockchain technology, secure data sharing, and banking innovation, we'd love to have you on the team! Reach out to [your contact information] to discuss collaboration opportunities.
+* **Join the Team:** If you're passionate about blockchain technology, secure data sharing, and banking innovation, we'd love to have you on the team! Reach out to [your contact information] to discuss collaboration opportunities, send your interest to riqyuzet@gmail.com.
 * **Contribute Code:** We encourage contributions of any size, from bug fixes to new features.  Please refer to the [Contribution Guide] (link to a contribution guide in the repository) for guidelines on submitting pull requests.
 * **Report Issues:**  Help us improve OXIN by reporting any bugs or issues you encounter.  Use the GitHub Issues tab to submit detailed reports.
 * **Spread the Word:**  Help us grow the OXIN community by sharing the project with others who might be interested.  
