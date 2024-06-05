@@ -2,6 +2,7 @@ package com.mycompany.oxin;
 
 import java.util.*;
 
+
 class Block {
     private String data;
     private String previousHash;
