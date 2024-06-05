@@ -66,19 +66,5 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-**Assessment of Codebase:**
-
-* **Strong Foundation:**  The codebase demonstrates a solid understanding of blockchain principles and sharding concepts. 
-* **Room for Improvement:** 
-    * **Testing:**  The repository currently lacks comprehensive unit tests. Implementing tests is crucial for ensuring code quality and stability.
-    * **Documentation:**  Expanding the documentation with in-depth explanations of the code, class diagrams, and use cases will enhance code understanding and maintainability.
-    * **Security:**  Implementing robust security measures and protocols is essential for a blockchain network dealing with sensitive banking data. 
-
-**Next Steps:**
-
-* **Develop Comprehensive Testing:** Implement unit tests for each component of the project to ensure code quality and catch potential errors.
-* **Expand Documentation:**  Add clear and detailed comments to the code, create Javadoc documentation, and provide more in-depth explanations in the README.md.
-* **Prioritize Security:**  Implement security best practices for blockchain development, including secure communication protocols, data encryption, and vulnerability assessments.
-* **Explore Advanced Encryption:** Research and implement advanced encryption techniques like homomorphic encryption to further enhance data privacy and security.
 
 
