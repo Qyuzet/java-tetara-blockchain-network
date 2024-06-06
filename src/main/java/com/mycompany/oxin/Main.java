@@ -38,9 +38,11 @@ class Block {
 
 class Node {
     protected List<Block> blockchain;
+    protected boolean isVirtual;
 
-    public Node() {
+    public Node(boolean isVirtual) {
         blockchain = new ArrayList<>();
+        this.isVirtual = isVirtual;
     }
 
     public void addBlock(Block block) {
@@ -51,14 +53,18 @@ class Node {
         return blockchain;
     }
 
+    public boolean isVirtual() {
+        return isVirtual;
+    }
+
     public String getNodeType() {
         return "Node";
     }
 }
 
 class InternalNode extends Node {
-    public InternalNode() {
-        super();
+    public InternalNode(boolean isVirtual) {
+        super(isVirtual);
     }
 
     @Override
@@ -68,8 +74,8 @@ class InternalNode extends Node {
 }
 
 class EndDeviceNode extends Node {
-    public EndDeviceNode() {
-        super();
+    public EndDeviceNode(boolean isVirtual) {
+        super(isVirtual);
     }
 
     @Override
@@ -96,40 +102,46 @@ class Blockchain {
         organizations.get(orgName).add(endDevice);
     }
 
-    public void createAndDistributeBlock(String orgName, String data, boolean isPublic) {
+    public void createAndDistributeBlock(String orgName, String data, String inodeType, String endDeviceType) {
         List<Node> orgNodes = organizations.get(orgName);
         String previousHash = "0";
         if (!orgNodes.isEmpty()) {
             previousHash = orgNodes.get(0).getBlockchain().isEmpty() ? "0" : orgNodes.get(0).getBlockchain().get(orgNodes.get(0).getBlockchain().size() - 1).getHash();
         }
+        boolean isPublic = endDeviceType.contains("public");
         Block newBlock = new Block(data, previousHash, isPublic);
 
-        // Add the block to internal nodes of the specified organization
+        // Add the block to internal nodes based on inodeType
         for (Node node : orgNodes) {
-            if (node instanceof InternalNode) { // Only add to internal nodes
-                node.addBlock(newBlock);
-                System.out.println("Added block to " + node.getNodeType() + " of " + orgName + ": " + data);
+            if (node instanceof InternalNode) {
+                if ((inodeType.equals("Inode_public") && node.getNodeType().equals("Internal Node")) ||
+                        (inodeType.equals("Inode_private") && node.getNodeType().equals("Internal Node"))) {
+                    node.addBlock(newBlock);
+                    System.out.println("Added block to " + node.getNodeType() + " of " + orgName + ": " + data);
+                }
             }
         }
 
-        // If the data is public, distribute to internal nodes of other organizations
-        if (isPublic) {
+        // Distribute data to end devices based on endDeviceType
+        if (endDeviceType.equals("ED_public")) {
+            shardAndDistributePublicDataToEndDevices(data);
+        } else {
+            shardAndDistributeDataToEndDevices(data, orgName);
+        }
+
+        // If inodeType is public, add block to internal nodes of other organizations
+        if (inodeType.equals("Inode_public")) {
             for (String otherOrg : organizations.keySet()) {
                 if (!otherOrg.equals(orgName)) {
                     List<Node> otherOrgNodes = organizations.get(otherOrg);
                     for (Node node : otherOrgNodes) {
-                        if (node instanceof InternalNode) { // Only add to internal nodes of other organizations
+                        if (node instanceof InternalNode) {
                             node.addBlock(newBlock);
                             System.out.println("Added public block to " + node.getNodeType() + " of " + otherOrg + ": " + data);
                         }
                     }
                 }
             }
-            // Shard the public data and distribute to end devices of all organizations
-            shardAndDistributePublicDataToEndDevices(data);
-        } else {
-            // Shard the private data for end devices within the same organization
-            shardAndDistributeDataToEndDevices(data, orgName);
         }
     }
 
@@ -150,7 +162,7 @@ class Blockchain {
             for (Node node : organizations.get(orgName)) {
                 if (node instanceof EndDeviceNode) {
                     int startIdx = currentEndDevice * shardSize;
-                    int endIdx = (currentEndDevice == totalEndDevices - 1) ? data.length() : (currentEndDevice + 1) * shardSize; // Ensure the last shard gets the remaining data
+                    int endIdx = (currentEndDevice == totalEndDevices - 1) ? data.length() : (currentEndDevice + 1) * shardSize;
                     String shardData = data.substring(startIdx, endIdx);
                     String previousHash = node.getBlockchain().isEmpty() ? "0" : node.getBlockchain().get(node.getBlockchain().size() - 1).getHash();
                     Block shardBlock = new Block(shardData, previousHash, false);
@@ -178,7 +190,7 @@ class Blockchain {
 
         for (int i = 0; i < numEndDevices; i++) {
             int startIdx = i * shardSize;
-            int endIdx = (i == numEndDevices - 1) ? data.length() : (i + 1) * shardSize; // Ensure the last shard gets the remaining data
+            int endIdx = (i == numEndDevices - 1) ? data.length() : (i + 1) * shardSize;
             String shardData = data.substring(startIdx, endIdx);
             String previousHash = orgEndDevices.get(i).getBlockchain().isEmpty() ? "0" : orgEndDevices.get(i).getBlockchain().get(orgEndDevices.get(i).getBlockchain().size() - 1).getHash();
             Block shardBlock = new Block(shardData, previousHash, false);
@@ -200,9 +212,9 @@ public class Main {
         Blockchain blockchain = new Blockchain();
 
         // Create internal nodes for each organization
-        List<InternalNode> bniInternalNodes = Arrays.asList(new InternalNode(), new InternalNode(), new InternalNode());
-        List<InternalNode> bcaInternalNodes = Arrays.asList(new InternalNode(), new InternalNode(), new InternalNode());
-        List<InternalNode> btpnInternalNodes = Arrays.asList(new InternalNode(), new InternalNode(), new InternalNode());
+        List<InternalNode> bniInternalNodes = Arrays.asList(new InternalNode(false), new InternalNode(false), new InternalNode(false));
+        List<InternalNode> bcaInternalNodes = Arrays.asList(new InternalNode(false), new InternalNode(false), new InternalNode(false));
+        List<InternalNode> btpnInternalNodes = Arrays.asList(new InternalNode(false), new InternalNode(false), new InternalNode(false));
 
         // Add organizations and their internal nodes
         blockchain.addOrganization("BNI", bniInternalNodes);
@@ -211,30 +223,43 @@ public class Main {
 
         // Create and add end-device nodes for each organization
         for (int i = 0; i < 5; i++) {
-            EndDeviceNode bniEndDevice = new EndDeviceNode();
-            EndDeviceNode bcaEndDevice = new EndDeviceNode();
-            EndDeviceNode btpnEndDevice = new EndDeviceNode();
-
-            blockchain.addEndDevice("BNI", bniEndDevice);
+            EndDeviceNode bcaEndDevice = new EndDeviceNode(false);
+            EndDeviceNode btpnEndDevice = new EndDeviceNode(false);
             blockchain.addEndDevice("BCA", bcaEndDevice);
             blockchain.addEndDevice("BTPN", btpnEndDevice);
         }
 
-        // Create and distribute a public block across all end devices
-        blockchain.createAndDistributeBlock("BCA", "Sample public data to share across all banks", true);
+        for (int i = 0; i < 2; i++) {
+            EndDeviceNode bniEndDevice = new EndDeviceNode(false);
+            blockchain.addEndDevice("BNI", bniEndDevice);
+        }
 
-        // Create and distribute a private block within BCA
-        blockchain.createAndDistributeBlock("BCA", "Sample private data for BCA only", false);
+        // Adding virtual end-device nodes
+        for (int i = 0; i < 5; i++) {
+            EndDeviceNode bcaVirtualEndDevice = new EndDeviceNode(true);
+            EndDeviceNode btpnVirtualEndDevice = new EndDeviceNode(true);
+            blockchain.addEndDevice("BCA", bcaVirtualEndDevice);
+            blockchain.addEndDevice("BTPN", btpnVirtualEndDevice);
+        }
 
-        // Print out the blockchain data for each organization and their nodes
-        Map<String, List<Node>> organizations = blockchain.getOrganizations();
-        for (String orgName : organizations.keySet()) {
-            System.out.println("Organization: " + orgName);
-            List<Node> nodes = organizations.get(orgName);
+        for (int i = 0; i < 2; i++) {
+            EndDeviceNode bniVirtualEndDevice = new EndDeviceNode(true);
+            blockchain.addEndDevice("BNI", bniVirtualEndDevice);
+        }
+
+        // Create and distribute blocks
+        blockchain.createAndDistributeBlock("BCA", "Sample private data for BCA only", "Inode_private", "ED_private");
+        blockchain.createAndDistributeBlock("BTPN", "Sample public data for BTPN", "Inode_public", "ED_public");
+
+        // Print out the blockchains for each node in each organization
+        for (Map.Entry<String, List<Node>> entry : blockchain.getOrganizations().entrySet()) {
+            String orgName = entry.getKey();
+            List<Node> nodes = entry.getValue();
+            System.out.println("\nOrganization: " + orgName);
             for (Node node : nodes) {
-                System.out.println(node.getNodeType() + " blockchain data for " + orgName + ":");
+                System.out.println(node.getNodeType() + (node.isVirtual() ? " (Virtual)" : ""));
                 for (Block block : node.getBlockchain()) {
-                    System.out.println("Data: " + block.getData() + ", Hash: " + block.getHash() + ", PreviousHash: " + block.getPreviousHash());
+                    System.out.println(" - Block Hash: " + block.getHash() + ", Data: " + block.getData());
                 }
             }
         }
