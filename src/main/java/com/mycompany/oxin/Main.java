@@ -37,20 +37,30 @@ class Block {
 }
 
 class Node {
-    protected List<Block> blockchain;
+    protected List<Block> privateBlockchain;
+    protected List<Block> publicBlockchain;
     protected boolean isVirtual;
 
     public Node(boolean isVirtual) {
-        blockchain = new ArrayList<>();
+        privateBlockchain = new ArrayList<>();
+        publicBlockchain = new ArrayList<>();
         this.isVirtual = isVirtual;
     }
 
-    public void addBlock(Block block) {
-        blockchain.add(block);
+    public void addBlock(Block block, boolean isPublic) {
+        if (isPublic) {
+            publicBlockchain.add(block);
+        } else {
+            privateBlockchain.add(block);
+        }
     }
 
-    public List<Block> getBlockchain() {
-        return blockchain;
+    public List<Block> getPrivateBlockchain() {
+        return privateBlockchain;
+    }
+
+    public List<Block> getPublicBlockchain() {
+        return publicBlockchain;
     }
 
     public boolean isVirtual() {
@@ -105,20 +115,25 @@ class Blockchain {
     public void createAndDistributeBlock(String orgName, String data, String inodeType, String endDeviceType) {
         List<Node> orgNodes = organizations.get(orgName);
         String previousHash = "0";
+
+        // Determine which blockchain to use based on the inodeType
+        boolean inodeIsPublic = inodeType.equals("Inode_public");
+        boolean endDeviceIsPublic = endDeviceType.equals("ED_public");
+
+        // Create new block
         if (!orgNodes.isEmpty()) {
-            previousHash = orgNodes.get(0).getBlockchain().isEmpty() ? "0" : orgNodes.get(0).getBlockchain().get(orgNodes.get(0).getBlockchain().size() - 1).getHash();
+            previousHash = inodeIsPublic
+                    ? orgNodes.get(0).getPublicBlockchain().isEmpty() ? "0" : orgNodes.get(0).getPublicBlockchain().get(orgNodes.get(0).getPublicBlockchain().size() - 1).getHash()
+                    : orgNodes.get(0).getPrivateBlockchain().isEmpty() ? "0" : orgNodes.get(0).getPrivateBlockchain().get(orgNodes.get(0).getPrivateBlockchain().size() - 1).getHash();
         }
-        boolean isPublic = endDeviceType.contains("public");
-        Block newBlock = new Block(data, previousHash, isPublic);
+
+        Block newBlock = new Block(data, previousHash, inodeIsPublic);
 
         // Add the block to internal nodes based on inodeType
         for (Node node : orgNodes) {
             if (node instanceof InternalNode) {
-                if ((inodeType.equals("Inode_public") && node.getNodeType().equals("Internal Node")) ||
-                        (inodeType.equals("Inode_private") && node.getNodeType().equals("Internal Node"))) {
-                    node.addBlock(newBlock);
-                    System.out.println("Added block to " + node.getNodeType() + " of " + orgName + ": " + data);
-                }
+                node.addBlock(newBlock, inodeIsPublic);
+                System.out.println("Added block to " + node.getNodeType() + " of " + orgName + ": " + data);
             }
         }
 
@@ -136,7 +151,7 @@ class Blockchain {
                     List<Node> otherOrgNodes = organizations.get(otherOrg);
                     for (Node node : otherOrgNodes) {
                         if (node instanceof InternalNode) {
-                            node.addBlock(newBlock);
+                            node.addBlock(newBlock, true);
                             System.out.println("Added public block to " + node.getNodeType() + " of " + otherOrg + ": " + data);
                         }
                     }
@@ -164,9 +179,9 @@ class Blockchain {
                     int startIdx = currentEndDevice * shardSize;
                     int endIdx = (currentEndDevice == totalEndDevices - 1) ? data.length() : (currentEndDevice + 1) * shardSize;
                     String shardData = data.substring(startIdx, endIdx);
-                    String previousHash = node.getBlockchain().isEmpty() ? "0" : node.getBlockchain().get(node.getBlockchain().size() - 1).getHash();
-                    Block shardBlock = new Block(shardData, previousHash, false);
-                    node.addBlock(shardBlock);
+                    String previousHash = node.getPublicBlockchain().isEmpty() ? "0" : node.getPublicBlockchain().get(node.getPublicBlockchain().size() - 1).getHash();
+                    Block shardBlock = new Block(shardData, previousHash, true);
+                    node.addBlock(shardBlock, true);
 
                     // Print out the shard data being distributed
                     System.out.println("Distributing shard data to " + node.getNodeType() + " of " + orgName + ": " + shardData);
@@ -192,9 +207,9 @@ class Blockchain {
             int startIdx = i * shardSize;
             int endIdx = (i == numEndDevices - 1) ? data.length() : (i + 1) * shardSize;
             String shardData = data.substring(startIdx, endIdx);
-            String previousHash = orgEndDevices.get(i).getBlockchain().isEmpty() ? "0" : orgEndDevices.get(i).getBlockchain().get(orgEndDevices.get(i).getBlockchain().size() - 1).getHash();
+            String previousHash = orgEndDevices.get(i).getPrivateBlockchain().isEmpty() ? "0" : orgEndDevices.get(i).getPrivateBlockchain().get(orgEndDevices.get(i).getPrivateBlockchain().size() - 1).getHash();
             Block shardBlock = new Block(shardData, previousHash, false);
-            orgEndDevices.get(i).addBlock(shardBlock);
+            orgEndDevices.get(i).addBlock(shardBlock, false);
 
             // Print out the shard data being distributed
             System.out.println("Distributing shard data to " + orgEndDevices.get(i).getNodeType() + " of " + orgName + ": " + shardData);
@@ -234,12 +249,10 @@ public class Main {
             blockchain.addEndDevice("BNI", bniEndDevice);
         }
 
-        // Adding virtual end-device nodes
-        for (int i = 0; i < 5; i++) {
+        // Add virtual end-device nodes
+        for (int i = 0; i < 2; i++) {
             EndDeviceNode bcaVirtualEndDevice = new EndDeviceNode(true);
-            EndDeviceNode btpnVirtualEndDevice = new EndDeviceNode(true);
             blockchain.addEndDevice("BCA", bcaVirtualEndDevice);
-            blockchain.addEndDevice("BTPN", btpnVirtualEndDevice);
         }
 
         for (int i = 0; i < 2; i++) {
@@ -248,7 +261,8 @@ public class Main {
         }
 
         // Create and distribute blocks
-        blockchain.createAndDistributeBlock("BCA", "Sample private data for BCA only", "Inode_private", "ED_private");
+        blockchain.createAndDistributeBlock("BCA", "1Sample 1private 1data 1for 1BCA 1only", "Inode_private", "ED_private");
+        blockchain.createAndDistributeBlock("BCA", "2Sample 2private 2data 2for 2BCA 2only", "Inode_private", "ED_private");
         blockchain.createAndDistributeBlock("BTPN", "Sample public data for BTPN", "Inode_public", "ED_public");
 
         // Print out the blockchains for each node in each organization
@@ -258,8 +272,13 @@ public class Main {
             System.out.println("\nOrganization: " + orgName);
             for (Node node : nodes) {
                 System.out.println(node.getNodeType() + (node.isVirtual() ? " (Virtual)" : ""));
-                for (Block block : node.getBlockchain()) {
-                    System.out.println(" - Block Hash: " + block.getHash() + ", Data: " + block.getData());
+                System.out.println("  Private Blockchain:");
+                for (Block block : node.getPrivateBlockchain()) {
+                    System.out.println("    - Block PrevHash: " + block.getPreviousHash() +" ,Block Hash: " + block.getHash() + ", Data: " + block.getData());
+                }
+                System.out.println("  Public Blockchain:");
+                for (Block block : node.getPublicBlockchain()) {
+                    System.out.println("    - Block PrevHash: " + block.getHash() +" ,Block Hash: " + block.getHash() + ", Data: " + block.getData());
                 }
             }
         }
