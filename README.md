@@ -33,7 +33,7 @@ The current repository includes the foundation for TETARA, focusing on:
 
 **Getting Started:**
 
-1. **Clone the Repository:**  Use Git to clone the repository to your local machine: `git clone https://github.com/Qyuzet/TETARA-Omni-X-Interchange-Network.git`
+1. **Clone the Repository:**  Use Git to clone the repository to your local machine: `git clone https://github.com/Qyuzet/TETARA-Blockchain-network.git`
 2. **Set up Dependencies:**  Please do _'clean & build'_ to install the necessary Java libraries and dependencies, it will automatically refer to the `pom.xml` file.  
 3. **Run the Code:**  Follow the instructions provided in the `README.md` to compile and run the TETARA code _(coming soon)_. 
 
