@@ -19,6 +19,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <exec.mainClass>com.mycompany.oxin.OXIN</exec.mainClass>
+        <exec.mainClass>com.mycompany.tetara.OXIN</exec.mainClass>
     </properties>
 </project>

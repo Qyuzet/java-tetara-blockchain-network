@@ -1,4 +1,4 @@
-package com.mycompany.oxin;
+package com.mycompany.tetara;
 
 import java.util.*;
 
