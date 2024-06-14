@@ -262,7 +262,7 @@ public class Main {
 
         // Create and distribute blocks
         blockchain.createAndDistributeBlock("BCA", "1Sample 1private 1data 1for 1BCA 1only", "Inode_private", "ED_private");
-        blockchain.createAndDistributeBlock("BCA", "2Sample 2private 2data 2for 2BCA 2only", "Inode_private", "ED_private");
+        blockchain.createAndDistributeBlock("BCA", "2Samplee 2private 2data 2for 2BCA 2only", "Inode_private", "ED_private");
         blockchain.createAndDistributeBlock("BTPN", "Sample public data for BTPN", "Inode_public", "ED_public");
 
         // Print out the blockchains for each node in each organization
