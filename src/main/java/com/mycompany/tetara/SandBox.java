@@ -1,8 +1,7 @@
 package com.mycompany.tetara;
-
-
 import java.util.ArrayList;
 import java.util.List;
+
 public class SandBox {
 
     public static class Block {
@@ -39,8 +38,6 @@ public class SandBox {
         public void setExecutionResults(List<ExecutionResult> executionResults) {
             this.executionResults = executionResults;
         }
-
-        // Getters and Setters
     }
 
     public static class BlockHeader {
@@ -138,8 +135,6 @@ public class SandBox {
         public void setPohHash(byte[] pohHash) {
             this.pohHash = pohHash;
         }
-
-        // Getters and Setters
     }
 
     public static class Transaction {
@@ -166,8 +161,6 @@ public class SandBox {
         public void setMessage(Message message) {
             this.message = message;
         }
-
-        // Getters and Setters
     }
 
     public static class Message {
@@ -183,14 +176,6 @@ public class SandBox {
             this.instructions = instructions;
         }
 
-        public List<byte[]> getAccountKeys() {
-            return accountKeys;
-        }
-
-        public void setAccountKeys(List<byte[]> accountKeys) {
-            this.accountKeys = accountKeys;
-        }
-
         public MessageHeader getHeader() {
             return header;
         }
@@ -199,12 +184,12 @@ public class SandBox {
             this.header = header;
         }
 
-        public List<Instruction> getInstructions() {
-            return instructions;
+        public List<byte[]> getAccountKeys() {
+            return accountKeys;
         }
 
-        public void setInstructions(List<Instruction> instructions) {
-            this.instructions = instructions;
+        public void setAccountKeys(List<byte[]> accountKeys) {
+            this.accountKeys = accountKeys;
         }
 
         public byte[] getRecentBlockhash() {
@@ -215,8 +200,13 @@ public class SandBox {
             this.recentBlockhash = recentBlockhash;
         }
 
+        public List<Instruction> getInstructions() {
+            return instructions;
+        }
 
-        // Getters and Setters
+        public void setInstructions(List<Instruction> instructions) {
+            this.instructions = instructions;
+        }
     }
 
     public static class MessageHeader {
@@ -253,8 +243,6 @@ public class SandBox {
         public void setNumReadonlySignedAccounts(byte numReadonlySignedAccounts) {
             this.numReadonlySignedAccounts = numReadonlySignedAccounts;
         }
-
-// Getters and Setters
     }
 
     public static class Instruction {
@@ -275,7 +263,22 @@ public class SandBox {
         public void setProgramIdIndex(byte programIdIndex) {
             this.programIdIndex = programIdIndex;
         }
-// Getters and Setters
+
+        public List<Byte> getAccounts() {
+            return accounts;
+        }
+
+        public void setAccounts(List<Byte> accounts) {
+            this.accounts = accounts;
+        }
+
+        public List<Byte> getData() {
+            return data;
+        }
+
+        public void setData(List<Byte> data) {
+            this.data = data;
+        }
     }
 
     public static class ExecutionResult {
@@ -302,8 +305,6 @@ public class SandBox {
         public void setStatus(String status) {
             this.status = status;
         }
-
-        // Getters and Setters
     }
 
     public static void main(String[] args) {
@@ -315,7 +316,6 @@ public class SandBox {
 
         List<byte[]> signatures = new ArrayList<>();
         signatures.add(new byte[64]);
-        System.out.println(signatures);
 
         List<byte[]> accountKeys = new ArrayList<>();
         accountKeys.add(new byte[32]);
@@ -347,10 +347,47 @@ public class SandBox {
 
         Block block = new Block(header, transactions, executionResults);
 
-        System.out.println("Block created with slot number: " + block.header.slotNumber);
+        // Print block information
+        System.out.println("Block created with slot number: " + block.getHeader().getSlotNumber());
 
-        System.out.println("Head: " + block.header.blockhash +" "+ block.header.getTimestamp() +" "+ block.header.getLeaderSchedule() +" "+ block.header.getPohHash() +" "+ block.header.getTransactionsRoot());
+        System.out.println("Header: ");
+        System.out.println("  Blockhash: " + bytesToHex(block.getHeader().getBlockhash()));
+        System.out.println("  Timestamp: " + block.getHeader().getTimestamp());
+        System.out.println("  Leader Schedule: " + bytesToHex(block.getHeader().getLeaderSchedule()));
+        System.out.println("  Poh Hash: " + bytesToHex(block.getHeader().getPohHash()));
+        System.out.println("  Transactions Root: " + bytesToHex(block.getHeader().getTransactionsRoot()));
+        System.out.println("  Parent BlockHash: " + bytesToHex(block.getHeader().getParentBlockHash()));
+        System.out.println("  Poh Value: " + block.getHeader().getPohValue());
+
+        // Print transactions
+        System.out.println("\nTransactions: ");
+        for (Transaction tx : block.getTransactions()) {
+            System.out.println("  Signatures: " + tx.getSignatures());
+            System.out.println("  Message: ");
+            System.out.println("    Recent Blockhash: " + bytesToHex(tx.getMessage().getRecentBlockhash()));
+            System.out.println("    Account Keys: " + tx.getMessage().getAccountKeys());
+            System.out.println("    Instructions: ");
+            for (Instruction instruction : tx.getMessage().getInstructions()) {
+                System.out.println("      Program Id Index: " + instruction.getProgramIdIndex());
+                System.out.println("      Accounts: " + instruction.getAccounts());
+                System.out.println("      Data: " + instruction.getData());
+            }
+        }
+
+        // Print execution results
+        System.out.println("\nExecution Results: ");
+        for (ExecutionResult result : block.getExecutionResults()) {
+            System.out.println("  Logs: " + result.getLogs());
+            System.out.println("  Status: " + result.getStatus());
+        }
     }
 
-
+    // Helper method to convert byte array to hex string
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
 }
