@@ -349,7 +349,7 @@ public class SandBox {
 
         System.out.println("Block created with slot number: " + block.header.slotNumber);
 
-        System.out.println("Head: " + block.header.blockhash +" "+ block.header.getTimestamp() +" "+ block.header.getLeaderSchedule());
+        System.out.println("Head: " + block.header.blockhash +" "+ block.header.getTimestamp() +" "+ block.header.getLeaderSchedule() +" "+ block.header.getPohHash() +" "+ block.header.getTransactionsRoot());
     }
 
 
