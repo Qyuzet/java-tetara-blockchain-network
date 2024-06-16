@@ -1,18 +1,23 @@
 package com.mycompany.tetara;
+
 import java.util.ArrayList;
 import java.util.List;
-
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 public class SandBox {
 
     public static class Block {
+
         private BlockHeader header;
         private List<Transaction> transactions;
         private List<ExecutionResult> executionResults;
+        private Block previousBlock; // Reference to the previous block
 
-        public Block(BlockHeader header, List<Transaction> transactions, List<ExecutionResult> executionResults) {
+        public Block(BlockHeader header, List<Transaction> transactions, List<ExecutionResult> executionResults, Block previousBlock) {
             this.header = header;
             this.transactions = transactions;
             this.executionResults = executionResults;
+            this.previousBlock = previousBlock;
         }
 
         public BlockHeader getHeader() {
@@ -37,6 +42,14 @@ public class SandBox {
 
         public void setExecutionResults(List<ExecutionResult> executionResults) {
             this.executionResults = executionResults;
+        }
+
+        public Block getPreviousBlock() {
+            return previousBlock;
+        }
+
+        public void setPreviousBlock(Block previousBlock) {
+            this.previousBlock = previousBlock;
         }
     }
 
@@ -307,13 +320,35 @@ public class SandBox {
         }
     }
 
-    public static void main(String[] args) {
-        // Example of creating a Block
+    // Function to create a blockchain with a specified number of transactions
+    public static Block createBlockchain(int numTransactions, Block previousBlock) {
+
+        // Create a sample block header
         BlockHeader header = new BlockHeader(
                 new byte[32], new byte[32], 0, 1622540000L,
                 new byte[32], new byte[32], new byte[32], 0, new byte[32]
         );
 
+        // Create transactions
+        List<Transaction> transactions = new ArrayList<>();
+        for (int i = 0; i < numTransactions; i++) {
+            transactions.add(createTransaction());
+        }
+
+        // Create execution results (for demonstration)
+        List<ExecutionResult> executionResults = new ArrayList<>();
+        List<String> logs = new ArrayList<>();
+        logs.add("Transaction executed successfully");
+        executionResults.add(new ExecutionResult(logs, "Ok"));
+
+        // Create and return the blockchain block
+        // Create and return the blockchain block
+        Block newBlock = new Block(header, transactions, executionResults, previousBlock);
+        return newBlock;
+    }
+
+    // Helper method to create a sample transaction (customize as needed)
+    private static Transaction createTransaction() {
         List<byte[]> signatures = new ArrayList<>();
         signatures.add(new byte[64]);
 
@@ -335,51 +370,97 @@ public class SandBox {
         MessageHeader messageHeader = new MessageHeader((byte) 1, (byte) 1, (byte) 0);
         Message message = new Message(messageHeader, accountKeys, new byte[32], instructions);
 
-        Transaction transaction = new Transaction(signatures, message);
+        return new Transaction(signatures, message);
+    }
 
-        List<Transaction> transactions = new ArrayList<>();
-        transactions.add(transaction);
-
-        List<ExecutionResult> executionResults = new ArrayList<>();
-        List<String> logs = new ArrayList<>();
-        logs.add("Transaction executed successfully");
-        executionResults.add(new ExecutionResult(logs, "Ok"));
-
-        Block block = new Block(header, transactions, executionResults);
-
+    public static void showBlockchain(Block blockchain) {
         // Print block information
-        System.out.println("Block created with slot number: " + block.getHeader().getSlotNumber());
+        System.out.println("Block created with slot number: " + blockchain.getHeader().getSlotNumber());
 
         System.out.println("Header: ");
-        System.out.println("  Blockhash: " + bytesToHex(block.getHeader().getBlockhash()));
-        System.out.println("  Timestamp: " + block.getHeader().getTimestamp());
-        System.out.println("  Leader Schedule: " + bytesToHex(block.getHeader().getLeaderSchedule()));
-        System.out.println("  Poh Hash: " + bytesToHex(block.getHeader().getPohHash()));
-        System.out.println("  Transactions Root: " + bytesToHex(block.getHeader().getTransactionsRoot()));
-        System.out.println("  Parent BlockHash: " + bytesToHex(block.getHeader().getParentBlockHash()));
-        System.out.println("  Poh Value: " + block.getHeader().getPohValue());
+        System.out.println("  Blockhash: " + bytesToHex(blockchain.getHeader().getBlockhash()));
+        System.out.println("  Timestamp: " + blockchain.getHeader().getTimestamp());
+        System.out.println("  Leader Schedule: " + bytesToHex(blockchain.getHeader().getLeaderSchedule()));
+        System.out.println("  Poh Hash: " + bytesToHex(blockchain.getHeader().getPohHash()));
+        System.out.println("  Transactions Root: " + bytesToHex(blockchain.getHeader().getTransactionsRoot()));
+        System.out.println("  Parent BlockHash: " + bytesToHex(blockchain.getHeader().getParentBlockHash()));
+        System.out.println("  Poh Value: " + blockchain.getHeader().getPohValue());
 
         // Print transactions
         System.out.println("\nTransactions: ");
-        for (Transaction tx : block.getTransactions()) {
+        int txIndex = 1;
+        for (Transaction tx : blockchain.getTransactions()) {
+            System.out.println("Transaction " + txIndex + ": ");
             System.out.println("  Signatures: " + tx.getSignatures());
             System.out.println("  Message: ");
             System.out.println("    Recent Blockhash: " + bytesToHex(tx.getMessage().getRecentBlockhash()));
             System.out.println("    Account Keys: " + tx.getMessage().getAccountKeys());
             System.out.println("    Instructions: ");
+            int instrIndex = 1;
             for (Instruction instruction : tx.getMessage().getInstructions()) {
-                System.out.println("      Program Id Index: " + instruction.getProgramIdIndex());
-                System.out.println("      Accounts: " + instruction.getAccounts());
-                System.out.println("      Data: " + instruction.getData());
+                System.out.println("      Instruction " + instrIndex + ": ");
+                System.out.println("        Program Id Index: " + instruction.getProgramIdIndex());
+                System.out.println("        Accounts: " + instruction.getAccounts());
+                System.out.println("        Data: " + instruction.getData());
+                instrIndex++;
             }
+            txIndex++;
         }
 
-        // Print execution results
+        // Print execution results (for demonstration)
         System.out.println("\nExecution Results: ");
-        for (ExecutionResult result : block.getExecutionResults()) {
+        for (ExecutionResult result : blockchain.getExecutionResults()) {
             System.out.println("  Logs: " + result.getLogs());
             System.out.println("  Status: " + result.getStatus());
         }
+
+        // Print the hash of the previous block if available
+        Block previousBlock = blockchain.getPreviousBlock();
+        if (previousBlock != null) {
+            System.out.println("\nPrevious Block Hash: " + bytesToHex(previousBlock.getHeader().getBlockhash()));
+        } else {
+            System.out.println("\nGenesis Block (no previous block)");
+        }
+    }
+
+    public static void main(String[] args) {
+        // Create the genesis block
+        Block genesisBlock = createBlockchain(1, null);
+
+        byte[] inputBytes = new byte[32]; // Replace with your byte array
+        try {
+            // Create MessageDigest instance for SHA-256
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // Update digest with inputBytes
+            md.update(inputBytes);
+
+            // Generate the hash
+            byte[] hashBytes = md.digest();
+            genesisBlock.header.setBlockhash(hashBytes);
+
+            // Convert hashBytes to a hexadecimal string
+            String hashHex = bytesToHex(hashBytes);
+
+            // Print the hash
+            System.out.println("SHA-256 Hash: " + hashHex);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.println("SHA-256 algorithm not available.");
+            e.printStackTrace();
+        }
+
+
+
+        // Create subsequent blocks
+        Block blockchain1 = createBlockchain(1, genesisBlock);
+        Block blockchain2 = createBlockchain(1, blockchain1);
+
+        // Display blockchain information
+        System.out.println("Blockchain 1:");
+        showBlockchain(blockchain1);
+
+        System.out.println("\nBlockchain 2:");
+        showBlockchain(blockchain2);
     }
 
     // Helper method to convert byte array to hex string
