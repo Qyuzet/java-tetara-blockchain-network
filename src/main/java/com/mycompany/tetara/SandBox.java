@@ -1,10 +1,14 @@
 package com.mycompany.tetara;
-
+import java.awt.Toolkit;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.awt.AWTException;
+import java.awt.Robot;
+import java.awt.event.KeyEvent;
+
 public class SandBox {
 
     public static class Block {
@@ -322,12 +326,13 @@ public class SandBox {
     }
 
     // Function to create a blockchain with a specified number of transactions
-    public static Block createBlockchain(int numTransactions, Block previousBlock) {
+    public static Block createBlockchain(int numTransactions, Block previousBlock)  {
         byte[] prevBlockHash = previousBlock != null ? previousBlock.header.blockhash : new byte[32];
         long slotNumber = previousBlock != null ? previousBlock.header.slotNumber + 1 : 0;
 
         // Current timestamp in milliseconds
         long timestamp = System.currentTimeMillis();
+
 
         // Create inputBytes using previous block's hash and slot number
         byte[] inputBytes = new byte[prevBlockHash.length + Long.BYTES];
@@ -365,7 +370,8 @@ public class SandBox {
         // Create transactions
         List<Transaction> transactions = new ArrayList<>();
         for (int i = 0; i < numTransactions; i++) {
-            transactions.add(createTransaction(hashBytes));
+            transactions.add(createTransaction(hashBytes));Toolkit.getDefaultToolkit().beep();
+
         }
 
         // Compute the Merkle root of the transactions
@@ -374,7 +380,7 @@ public class SandBox {
         // Create a sample block header
         BlockHeader header = new BlockHeader(
                 prevBlockHash, hashBytes, slotNumber, timestamp,
-                new byte[32], hashBytes, transactionsRoot, 0, pohHashBytes
+                new byte[32], hashBytes, transactionsRoot, previousBlock != null ? previousBlock.getHeader().getPohValue()+1: 0, pohHashBytes
         );
 
         // Create execution results (for demonstration)
@@ -385,6 +391,10 @@ public class SandBox {
 
         // Create and return the blockchain block
         Block newBlock = new Block(header, transactions, executionResults, previousBlock);
+
+
+
+
         return newBlock;
     }
 
@@ -506,8 +516,8 @@ public class SandBox {
     }
 
     public static void main(String[] args) {
-        int numBlocks = 1000000;
-        int numTransactions = 200;
+        int numBlocks = 1000;
+        int numTransactions = 1;
         Block[] blocks = new Block[numBlocks];
         Block previousBlock = null;
 
@@ -543,5 +553,10 @@ public class SandBox {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    public static void simulateKeyPress(Robot robot) {
+        robot.keyPress(KeyEvent.VK_ALT);  // Press and immediately release the Alt key
+        robot.keyRelease(KeyEvent.VK_ALT);
     }
 }
