@@ -337,6 +337,7 @@ public class SandBox {
         }
 
         byte[] hashBytes = new byte[0];
+        byte[] pohHashBytes = new byte [0];
         try {
             // Create MessageDigest instance for SHA-256
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -348,14 +349,14 @@ public class SandBox {
             hashBytes = md.digest();
 
             // Generate PoH hash
-            byte[] pohHashBytes = md.digest(hashBytes);
+            pohHashBytes = md.digest(hashBytes);
 
             // Convert hashBytes to a hexadecimal string
             String hashHex = bytesToHex(hashBytes);
 
             // Print the hash (optional)
-            System.out.println("Blockhash (SHA-256): " + hashHex);
-            System.out.println("PoH Hash (SHA-256): " + bytesToHex(pohHashBytes));
+            //System.out.println("Blockhash (SHA-256): " + hashHex);
+            //System.out.println("PoH Hash (SHA-256): " + bytesToHex(pohHashBytes));
         } catch (NoSuchAlgorithmException e) {
             System.err.println("SHA-256 algorithm not available.");
             e.printStackTrace();
@@ -373,7 +374,7 @@ public class SandBox {
         // Create a sample block header
         BlockHeader header = new BlockHeader(
                 prevBlockHash, hashBytes, slotNumber, timestamp,
-                new byte[32], hashBytes, transactionsRoot, 0, new byte[32]
+                new byte[32], hashBytes, transactionsRoot, 0, pohHashBytes
         );
 
         // Create execution results (for demonstration)
@@ -505,30 +506,32 @@ public class SandBox {
     }
 
     public static void main(String[] args) {
-        // Create the genesis block
+        int numBlocks = 1000000;
+        int numTransactions = 200;
+        Block[] blocks = new Block[numBlocks];
+        Block previousBlock = null;
 
-        Block genesisBlock = createBlockchain(1, null);
-        System.out.println("Blockchain 0:");
-        showBlockchain(genesisBlock);
+        for (int i = 0; i < numBlocks; i++) {
+            String blockName = "block" + (i + 1); // Naming blocks as block1, block2, ...
 
-
-
-        // Create subsequent blocks
-        Block blockchain1 = createBlockchain(1, genesisBlock);
-        System.out.println("Blockchain 1:");
-        showBlockchain(blockchain1);
-
-
-        Block blockchain2 = createBlockchain(1, blockchain1);
-        System.out.println("\nBlockchain 2:");
-        showBlockchain(blockchain2);
-
-        for(int i = 0; i < 2; i++){
-            System.out.println(i);
+            if (i == 0) {
+                Block genesisBlock = createBlockchain(numTransactions, previousBlock);
+                System.out.println("Blockchain 0:");
+                showBlockchain(genesisBlock);
+                blocks[i] = genesisBlock; // Store the genesis block in the array
+                previousBlock = genesisBlock;
+            } else {
+                Block newBlock = createBlockchain(numTransactions, previousBlock);
+                System.out.println(blockName + ":");
+                showBlockchain(newBlock);
+                blocks[i] = newBlock; // Store the new block in the array
+                previousBlock = newBlock;
+            }
         }
 
-
-
+        // Example of accessing a specific block
+        System.out.println("\nAccessing last block:");
+        showBlockchain(blocks[blocks.length-1]); // Index 2 corresponds to block3 in the array
 
 
     }
