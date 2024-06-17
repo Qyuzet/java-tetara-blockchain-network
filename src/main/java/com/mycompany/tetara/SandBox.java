@@ -1,5 +1,6 @@
 package com.mycompany.tetara;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.security.MessageDigest;
@@ -322,18 +323,58 @@ public class SandBox {
 
     // Function to create a blockchain with a specified number of transactions
     public static Block createBlockchain(int numTransactions, Block previousBlock) {
+        byte[] prevBlockHash = previousBlock != null ? previousBlock.header.blockhash : new byte[32];
+        long slotNumber = previousBlock != null ? previousBlock.header.slotNumber + 1 : 0;
 
-        // Create a sample block header
-        BlockHeader header = new BlockHeader(
-                new byte[32], new byte[32], 0, 1622540000L,
-                new byte[32], new byte[32], new byte[32], 0, new byte[32]
-        );
+        // Current timestamp in milliseconds
+        long timestamp = System.currentTimeMillis();
+
+        // Create inputBytes using previous block's hash and slot number
+        byte[] inputBytes = new byte[prevBlockHash.length + Long.BYTES];
+        System.arraycopy(prevBlockHash, 0, inputBytes, 0, prevBlockHash.length);
+        for (int i = 0; i < Long.BYTES; i++) {
+            inputBytes[prevBlockHash.length + i] = (byte) ((slotNumber >> (8 * i)) & 0xFF);
+        }
+
+        byte[] hashBytes = new byte[0];
+        try {
+            // Create MessageDigest instance for SHA-256
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+            // Update digest with inputBytes
+            md.update(inputBytes);
+
+            // Generate the hash (blockhash)
+            hashBytes = md.digest();
+
+            // Generate PoH hash
+            byte[] pohHashBytes = md.digest(hashBytes);
+
+            // Convert hashBytes to a hexadecimal string
+            String hashHex = bytesToHex(hashBytes);
+
+            // Print the hash (optional)
+            System.out.println("Blockhash (SHA-256): " + hashHex);
+            System.out.println("PoH Hash (SHA-256): " + bytesToHex(pohHashBytes));
+        } catch (NoSuchAlgorithmException e) {
+            System.err.println("SHA-256 algorithm not available.");
+            e.printStackTrace();
+        }
 
         // Create transactions
         List<Transaction> transactions = new ArrayList<>();
         for (int i = 0; i < numTransactions; i++) {
-            transactions.add(createTransaction());
+            transactions.add(createTransaction(hashBytes));
         }
+
+        // Compute the Merkle root of the transactions
+        byte[] transactionsRoot = computeMerkleRoot(transactions);
+
+        // Create a sample block header
+        BlockHeader header = new BlockHeader(
+                prevBlockHash, hashBytes, slotNumber, timestamp,
+                new byte[32], hashBytes, transactionsRoot, 0, new byte[32]
+        );
 
         // Create execution results (for demonstration)
         List<ExecutionResult> executionResults = new ArrayList<>();
@@ -342,13 +383,53 @@ public class SandBox {
         executionResults.add(new ExecutionResult(logs, "Ok"));
 
         // Create and return the blockchain block
-        // Create and return the blockchain block
         Block newBlock = new Block(header, transactions, executionResults, previousBlock);
         return newBlock;
     }
 
+    public static byte[] computeMerkleRoot(List<Transaction> transactions) {
+        if (transactions.isEmpty()) {
+            return new byte[32];
+        }
+
+        List<byte[]> tree = new ArrayList<>();
+        for (Transaction tx : transactions) {
+            tree.add(hash(tx.message.getRecentBlockhash()));
+        }
+
+        while (tree.size() > 1) {
+            List<byte[]> newTree = new ArrayList<>();
+            for (int i = 0; i < tree.size(); i += 2) {
+                if (i + 1 < tree.size()) {
+                    newTree.add(hash(concatenate(tree.get(i), tree.get(i + 1))));
+                } else {
+                    newTree.add(tree.get(i));
+                }
+            }
+            tree = newTree;
+        }
+
+        return tree.get(0);
+    }
+
+    public static byte[] hash(byte[] data) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            return md.digest(data);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static byte[] concatenate(byte[] a, byte[] b) {
+        byte[] result = new byte[a.length + b.length];
+        System.arraycopy(a, 0, result, 0, a.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
+    }
+
     // Helper method to create a sample transaction (customize as needed)
-    private static Transaction createTransaction() {
+    private static Transaction createTransaction(byte[] currentHash) {
         List<byte[]> signatures = new ArrayList<>();
         signatures.add(new byte[64]);
 
@@ -368,7 +449,7 @@ public class SandBox {
         instructions.add(new Instruction((byte) 0, instructionAccounts, instructionData));
 
         MessageHeader messageHeader = new MessageHeader((byte) 1, (byte) 1, (byte) 0);
-        Message message = new Message(messageHeader, accountKeys, new byte[32], instructions);
+        Message message = new Message(messageHeader, accountKeys, currentHash, instructions);
 
         return new Transaction(signatures, message);
     }
@@ -425,42 +506,31 @@ public class SandBox {
 
     public static void main(String[] args) {
         // Create the genesis block
+
         Block genesisBlock = createBlockchain(1, null);
-
-        byte[] inputBytes = new byte[32]; // Replace with your byte array
-        try {
-            // Create MessageDigest instance for SHA-256
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-
-            // Update digest with inputBytes
-            md.update(inputBytes);
-
-            // Generate the hash
-            byte[] hashBytes = md.digest();
-            genesisBlock.header.setBlockhash(hashBytes);
-
-            // Convert hashBytes to a hexadecimal string
-            String hashHex = bytesToHex(hashBytes);
-
-            // Print the hash
-            System.out.println("SHA-256 Hash: " + hashHex);
-        } catch (NoSuchAlgorithmException e) {
-            System.err.println("SHA-256 algorithm not available.");
-            e.printStackTrace();
-        }
+        System.out.println("Blockchain 0:");
+        showBlockchain(genesisBlock);
 
 
 
         // Create subsequent blocks
         Block blockchain1 = createBlockchain(1, genesisBlock);
-        Block blockchain2 = createBlockchain(1, blockchain1);
-
-        // Display blockchain information
         System.out.println("Blockchain 1:");
         showBlockchain(blockchain1);
 
+
+        Block blockchain2 = createBlockchain(1, blockchain1);
         System.out.println("\nBlockchain 2:");
         showBlockchain(blockchain2);
+
+        for(int i = 0; i < 2; i++){
+            System.out.println(i);
+        }
+
+
+
+
+
     }
 
     // Helper method to convert byte array to hex string
