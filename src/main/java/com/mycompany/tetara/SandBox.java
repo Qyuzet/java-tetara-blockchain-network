@@ -1,20 +1,22 @@
 package com.mycompany.tetara;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SandBox {
-    // Validator class
+
     static class Validator {
         private String publicKey;
         private int stakedAmount;
         private List<Block> blockchain;
+        private String type; // "public" or "ppe"
 
-        public Validator(String publicKey, int stakedAmount) {
+        public Validator(String publicKey, int stakedAmount, String type) {
             this.publicKey = publicKey;
             this.stakedAmount = stakedAmount;
             this.blockchain = new ArrayList<>();
+            this.type = type;
         }
 
         public String getPublicKey() {
@@ -34,8 +36,11 @@ public class SandBox {
         }
 
         public String signBlock(String blockHash) {
-            // Simple signature using public key and block hash
             return publicKey + "_signed_" + blockHash;
+        }
+
+        public String getType() {
+            return type;
         }
     }
 
@@ -59,6 +64,18 @@ public class SandBox {
 
         public String getId() {
             return id;
+        }
+
+        @Override
+        public String toString() {
+            return "Transaction{" +
+                    "id='" + id + '\'' +
+                    ", from='" + from + '\'' +
+                    ", to='" + to + '\'' +
+                    ", amount=" + amount +
+                    ", timestamp=" + timestamp +
+                    ", signature='" + signature + '\'' +
+                    '}';
         }
     }
 
@@ -141,14 +158,18 @@ public class SandBox {
         }
     }
 
-    // Blockchain class
+    // Blockchain class (Modified)
     static class Blockchain {
         List<Block> chain;
         Mempool mempool;
+        List<Validator> validators; // Store all validators (public and ppe)
+        Map<String, String> shardLocations; // Tracks shard locations
 
-        public Blockchain() {
+        public Blockchain(List<Validator> validators) {
             this.chain = new ArrayList<>();
             this.mempool = new Mempool();
+            this.validators = validators;
+            this.shardLocations = new HashMap<>();
         }
 
         public void addBlock(Block block) {
@@ -180,7 +201,7 @@ public class SandBox {
             System.out.println("State Root: " + block.header.stateRoot);
             System.out.println("Transaction Root: " + block.header.transactionRoot);
             System.out.println("PoH Hash: " + block.header.pohHash);
-            System.out.println("Block Value: " + block.header.pohValue);
+            System.out.println("PoH Value: " + block.header.pohValue);
             System.out.println("Leader Signature: " + block.header.leaderSignature);
             System.out.println("Transactions:");
             for (Transaction tx : block.transactions) {
@@ -192,6 +213,164 @@ public class SandBox {
             }
             System.out.println();
         }
+
+        public void shardAndStoreBlock(Block block) {
+            List<String> shards = splitBlockIntoShards(block);
+            assignShardsToPPENodes(shards, block.header.blockNumber);
+        }
+
+        private List<String> splitBlockIntoShards(Block block) {
+            int maxShardSizeBytes = 1024; // 1 KB
+            List<String> shards = new ArrayList<>();
+
+            // Shard 1: Block Header
+            shards.add("SBlock_" + block.header.blockNumber + "_1: Block Hash: " + block.header.blockHash +
+                    ", Timestamp: " + block.header.timestamp +
+                    ", Previous Hash: " + block.header.previousHash +
+                    ", State Root: " + block.header.stateRoot +
+                    ", Transaction Root: " + block.header.transactionRoot +
+                    ", PoH Hash: " + block.header.pohHash +
+                    ", PoH Value: " + block.header.pohValue +
+                    ", Leader Signature: " + block.header.leaderSignature);
+
+            // Shard 2 (and more): Transactions
+            int shardSize = 0;
+            int shardIndex = 2;
+            StringBuilder transactionShard = new StringBuilder();
+            for (Transaction tx : block.transactions) {
+                String transactionData = "TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp;
+
+                if (shardSize + transactionData.length() > maxShardSizeBytes) {
+                    shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": Transactions: " + transactionShard.toString());
+                    shardIndex++;
+                    shardSize = 0;
+                    transactionShard = new StringBuilder();
+                }
+                transactionShard.append(transactionData).append(", ");
+                shardSize += transactionData.length();
+            }
+            if (transactionShard.length() > 0) {
+                shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": " + transactionShard.toString());
+            }
+
+            // Shard N (and more): Attestation Signatures
+            shardSize = 0;
+            shardIndex++;
+            StringBuilder attestationShard = new StringBuilder();
+            for (String signature : block.attestationSignatures) {
+                String signatureData = signature;
+
+                if (shardSize + signatureData.length() > maxShardSizeBytes) {
+                    shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": Attestation Signatures: " + attestationShard.toString());
+                    shardIndex++;
+                    shardSize = 0;
+                    attestationShard = new StringBuilder();
+                }
+                attestationShard.append(signatureData).append(", ");
+                shardSize += signatureData.length();
+            }
+            if (attestationShard.length() > 0) {
+                shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": Attestation Signatures: " + attestationShard.toString());
+            }
+
+            return shards;
+        }
+
+        private void assignShardsToPPENodes(List<String> shards, int blockNumber) {
+            List<Validator> ppeNodes = validators.stream()
+                    .filter(v -> v.getType().equals("ppe"))
+                    .collect(Collectors.toList());
+
+            if (ppeNodes.isEmpty()) {
+                throw new IllegalStateException("No PPE nodes available for sharding.");
+            }
+
+            int numShards = shards.size();
+            int numPPENodes = ppeNodes.size();
+            Map<String, Long> ppeShardDistribution = new LinkedHashMap<>();
+            long initialDistribution = numShards / numPPENodes;
+            long remainder = numShards % numPPENodes;
+
+            for (int i = 1; i <= numPPENodes; i++) {
+                long value = (i <= remainder) ? initialDistribution + 1 : initialDistribution;
+                ppeShardDistribution.put("ppe_Node" + i, value);
+            }
+
+            Random random = new Random();
+            int shardIndex = 0;
+
+            // Create a single block for each PPE node to store shards
+            for (Validator ppeNode : ppeNodes) {
+                List<Transaction> shardTransactions = new ArrayList<>();
+
+                // Determine the number of shards for this PPE node
+                long numShardsForNode = ppeShardDistribution.get(ppeNode.getPublicKey());
+
+                for (int i = 0; i < numShardsForNode; i++) {
+                    if (shardIndex < shards.size()) {
+                        String shardId = "SBlock_" + blockNumber + "_" + (shardIndex + 1);
+                        String shardData = shards.get(shardIndex);
+
+                        // Store shard location using the PPE node's public key
+                        shardLocations.put(shardId, ppeNode.getPublicKey());
+
+                        // Add shard as a Transaction to the list
+                        shardTransactions.add(new Transaction(shardId, "", "", 0.0, shardData));
+                        shardIndex++;
+                    }
+                }
+
+                // Add the block with shard transactions to the PPE node's blockchain
+                ppeNode.blockchain.add(new Block(null, shardTransactions));
+            }
+        }
+
+        public void reconstructAndPrintBlockchain() {
+            System.out.println("Reconstructing the entire blockchain:");
+
+            // Find the highest block number from shardLocations
+            int highestBlockNumber = shardLocations.keySet().stream()
+                    .map(shardId -> Integer.parseInt(shardId.split("_")[1])) // Extract block number from shard ID
+                    .max(Integer::compare)
+                    .orElse(0); // Default to 0 if no shards found
+
+            // Reconstruct and print each block
+            for (int blockNumber = 0; blockNumber <= highestBlockNumber; blockNumber++) {
+                reconstructAndPrintBlock(blockNumber);
+            }
+        }
+
+        public void reconstructAndPrintBlock(int blockNumber) {
+            StringBuilder reconstructedBlockData = new StringBuilder();
+
+            // Get shard IDs for the specified block number and sort them
+            List<String> sortedShardIds = shardLocations.keySet().stream()
+                    .filter(shardId -> shardId.startsWith("SBlock_" + blockNumber + "_"))
+                    .sorted() // Sort shard IDs in ascending order
+                    .collect(Collectors.toList());
+
+            // Reconstruct the block using sorted shard IDs
+            for (String shardId : sortedShardIds) {
+                String ppeNodePublicKey = shardLocations.get(shardId);
+
+                Validator ppeNode = validators.stream()
+                        .filter(node -> node.getPublicKey().equals(ppeNodePublicKey))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException("PPE Node not found: " + ppeNodePublicKey));
+
+                String shardData = ppeNode.getBlockchain()
+                        .stream()
+                        .filter(block -> block.transactions.get(0).getId().equals(shardId))
+                        .findFirst()
+                        .map(block -> block.transactions.get(0).signature)
+                        .orElse("Shard not found");
+
+                reconstructedBlockData.append(shardData).append("\n");
+            }
+
+            System.out.println("Reconstructed Block Data:\n" + reconstructedBlockData.toString());
+        }
+
     }
 
     // Main class
@@ -209,24 +388,31 @@ public class SandBox {
         validatorStakes.put("Validator9", 1500);
         validatorStakes.put("Validator10", 2000);
 
+        // Add PPE nodes
+        validatorStakes.put("ppe_Node1", 100); // Example PPE node stakes
+        validatorStakes.put("ppe_Node2", 150);
+        validatorStakes.put("ppe_Node3", 200);
+        validatorStakes.put("ppe_Node4", 250);
+        validatorStakes.put("ppe_Node5", 100);
 
         // Initialize validators
         List<Validator> validators = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : validatorStakes.entrySet()) {
-            validators.add(new Validator(entry.getKey(), entry.getValue()));
+            String type = entry.getKey().startsWith("ppe_") ? "ppe" : "public";
+            validators.add(new Validator(entry.getKey(), entry.getValue(), type));
         }
 
         // Elect a leader for block creation
         int epochNumber = 1;
-        int epochCycle = 432000;
-        int numSlots = 1000000;  // Realistic number of slots per epoch
+        int epochCycle = 10;
+        int numSlots = 10;  // Realistic number of slots per epoch
 
         System.out.println("Initializing Epoch " + epochNumber);
         initializeEpoch(epochNumber, epochCycle, numSlots, validators);
     }
 
     private static void initializeEpoch(int epochNumber, int epochCycle, int numSlots, List<Validator> validators) {
-        Blockchain blockchain = new Blockchain();
+        Blockchain blockchain = new Blockchain(validators);
 
         System.out.println("Epoch " + epochNumber + " started");
         System.out.println("Generating leader schedule...");
@@ -278,6 +464,8 @@ public class SandBox {
                         break;
                     }
                 }
+                // Shard and store the block data on PPE nodes
+                blockchain.shardAndStoreBlock(newBlock);
                 blockchain.printBlockchain("latestBlock");
 
                 // Introduce a delay of 400ms
@@ -302,6 +490,9 @@ public class SandBox {
             }
         }
         System.out.println("Done Scheduling");
+        System.out.println("Reconstructing Block:");
+        blockchain.reconstructAndPrintBlock(2);
+        blockchain.reconstructAndPrintBlockchain(); // Call the new method
     }
 
     private static Validator selectLeaderForSlot(List<Validator> validators, int slot) {
@@ -345,7 +536,7 @@ public class SandBox {
     }
 
     private static Transaction createTransaction(String id, String from, String to, double amount, String signature) {
-        return new Transaction(id, from, to, amount, signature);
+        return new Transaction(id, from, String.valueOf(to), amount, signature);
     }
 
     private static String generatePoH(String previousHash, long timestamp) {
