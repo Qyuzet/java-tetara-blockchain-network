@@ -9,10 +9,12 @@ public class SandBox {
     static class Validator {
         private String publicKey;
         private int stakedAmount;
+        private List<Block> blockchain;
 
         public Validator(String publicKey, int stakedAmount) {
             this.publicKey = publicKey;
             this.stakedAmount = stakedAmount;
+            this.blockchain = new ArrayList<>();
         }
 
         public String getPublicKey() {
@@ -21,6 +23,19 @@ public class SandBox {
 
         public int getStakedAmount() {
             return stakedAmount;
+        }
+
+        public List<Block> getBlockchain() {
+            return blockchain;
+        }
+
+        public void addBlock(Block block) {
+            blockchain.add(block);
+        }
+
+        public String signBlock(String blockHash) {
+            // Simple signature using public key and block hash
+            return publicKey + "_signed_" + blockHash;
         }
     }
 
@@ -50,6 +65,7 @@ public class SandBox {
     // BlockHeader class
     static class BlockHeader {
         int blockNumber;
+        int pohValue;
         long timestamp;
         String previousHash;
         String stateRoot;
@@ -60,6 +76,7 @@ public class SandBox {
 
         public BlockHeader(int blockNumber, long timestamp, String previousHash, String stateRoot, String transactionRoot, String pohHash, String leaderSignature) {
             this.blockNumber = blockNumber;
+            this.pohValue = blockNumber;
             this.timestamp = timestamp;
             this.previousHash = previousHash;
             this.stateRoot = stateRoot;
@@ -86,10 +103,20 @@ public class SandBox {
     static class Block {
         BlockHeader header;
         List<Transaction> transactions;
+        List<String> attestationSignatures;
 
         public Block(BlockHeader header, List<Transaction> transactions) {
             this.header = header;
             this.transactions = transactions;
+            this.attestationSignatures = new ArrayList<>();
+        }
+
+        public void addAttestationSignature(String signature) {
+            attestationSignatures.add(signature);
+        }
+
+        public List<String> getAttestationSignatures() {
+            return attestationSignatures;
         }
     }
 
@@ -146,17 +173,22 @@ public class SandBox {
         }
 
         private void printBlock(Block block) {
-            System.out.println("Block Number: " + block.header.blockNumber);
+            //System.out.println("Block Number: " + block.header.blockNumber);
             System.out.println("Block Hash: " + block.header.blockHash);
             System.out.println("Timestamp: " + block.header.timestamp);
             System.out.println("Previous Hash: " + block.header.previousHash);
             System.out.println("State Root: " + block.header.stateRoot);
             System.out.println("Transaction Root: " + block.header.transactionRoot);
             System.out.println("PoH Hash: " + block.header.pohHash);
+            System.out.println("Block Value: " + block.header.pohValue);
             System.out.println("Leader Signature: " + block.header.leaderSignature);
             System.out.println("Transactions:");
             for (Transaction tx : block.transactions) {
                 System.out.println("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp);
+            }
+            System.out.println("Attestation Signatures:");
+            for (String signature : block.attestationSignatures) {
+                System.out.println("  " + signature);
             }
             System.out.println();
         }
@@ -170,6 +202,13 @@ public class SandBox {
         validatorStakes.put("Validator2", 1500);
         validatorStakes.put("Validator3", 2000);
         validatorStakes.put("Validator4", 2500);
+        validatorStakes.put("Validator5", 1000);
+        validatorStakes.put("Validator6", 1500);
+        validatorStakes.put("Validator7", 2000);
+        validatorStakes.put("Validator8", 2500);
+        validatorStakes.put("Validator9", 1500);
+        validatorStakes.put("Validator10", 2000);
+
 
         // Initialize validators
         List<Validator> validators = new ArrayList<>();
@@ -179,8 +218,8 @@ public class SandBox {
 
         // Elect a leader for block creation
         int epochNumber = 1;
-        int epochCycle = 100000;
-        int numSlots = 500000;  // Realistic number of slots per epoch
+        int epochCycle = 432000;
+        int numSlots = 1000000;  // Realistic number of slots per epoch
 
         System.out.println("Initializing Epoch " + epochNumber);
         initializeEpoch(epochNumber, epochCycle, numSlots, validators);
@@ -207,7 +246,7 @@ public class SandBox {
 
                 // Introduce a delay of 400ms
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(0);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -221,14 +260,29 @@ public class SandBox {
                 // Create and add new block
                 Block previousBlock = blockchain.chain.get(blockchain.chain.size() - 1);
                 Block newBlock = createBlock(slot, previousBlock, blockchain.mempool, leader.getPublicKey());
-                if (validateBlock(newBlock)) {
-                    blockchain.addBlock(newBlock);
+
+                // Collect attestation signatures from validators
+                for (Validator validator : validators) {
+                    String attestationSignature = validator.signBlock(newBlock.header.blockHash);
+                    newBlock.addAttestationSignature(attestationSignature);
+
+                    // Check if 2/3 majority is reached
+                    if (newBlock.getAttestationSignatures().size() >= (validators.size() * 2 / 3)) {
+                        if (validateBlock(newBlock)) {
+                            // Finalize the block by adding it to the leader's blockchain and sharing with other validators
+                            blockchain.addBlock(newBlock);
+                            for (Validator v : validators) {
+                                v.addBlock(newBlock);
+                            }
+                        }
+                        break;
+                    }
                 }
                 blockchain.printBlockchain("latestBlock");
 
                 // Introduce a delay of 400ms
                 try {
-                    Thread.sleep(0);
+                    Thread.sleep(423);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -307,7 +361,7 @@ public class SandBox {
     }
 
     private static String signBlock(String publicKey, String pohHash) {
-        // Placeholder for actual signature gic
+        // Placeholder for actual signature logic
         return publicKey + "_signed_" + pohHash;
     }
 
