@@ -13,6 +13,7 @@ TETARA is a blockchain network designed specifically for secure and efficient da
 * **Data Sharing for End-Devices:**  TETARA enables banks to share relevant blockchain data with their customers' smartphones, reducing storage requirements on individual devices.
   
 ![TETARA CD-UML-01](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/c78083ce-2de5-46ab-8e4e-fd6062d84e51)
+![SOL](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/0dee782a-c979-4e62-adba-f942a6ec7196)
 
 
 **Current Status:**
