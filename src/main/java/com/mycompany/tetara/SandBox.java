@@ -41,6 +41,10 @@ public class SandBox {
             this.signature = signature;
             this.timestamp = System.currentTimeMillis();
         }
+
+        public String getId() {
+            return id;
+        }
     }
 
     // BlockHeader class
@@ -52,6 +56,7 @@ public class SandBox {
         String transactionRoot;
         String pohHash;
         String leaderSignature;
+        String blockHash;
 
         public BlockHeader(int blockNumber, long timestamp, String previousHash, String stateRoot, String transactionRoot, String pohHash, String leaderSignature) {
             this.blockNumber = blockNumber;
@@ -61,6 +66,19 @@ public class SandBox {
             this.transactionRoot = transactionRoot;
             this.pohHash = pohHash;
             this.leaderSignature = leaderSignature;
+            this.blockHash = generateBlockHash();
+        }
+
+        private String generateBlockHash() {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                String data = blockNumber + timestamp + previousHash + stateRoot + transactionRoot + pohHash + leaderSignature;
+                byte[] hash = digest.digest(data.getBytes());
+                return bytesToHex(hash);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+                return "";
+            }
         }
     }
 
@@ -117,37 +135,30 @@ public class SandBox {
         public void printBlockchain(String mode) {
             switch (mode) {
                 case "latestBlock":
-                    System.out.println("Block Number: " + chain.get(chain.size() - 1).header.blockNumber);
-                    System.out.println("Timestamp: " + chain.get(chain.size() - 1).header.timestamp);
-                    System.out.println("Previous Hash: " + chain.get(chain.size() - 1).header.previousHash);
-                    System.out.println("State Root: " + chain.get(chain.size() - 1).header.stateRoot);
-                    System.out.println("Transaction Root: " + chain.get(chain.size() - 1).header.transactionRoot);
-                    System.out.println("PoH Hash: " + chain.get(chain.size() - 1).header.pohHash);
-                    System.out.println("Leader Signature: " + chain.get(chain.size() - 1).header.leaderSignature);
-                    System.out.println("Transactions:");
-                    for (Transaction tx : chain.get(chain.size() - 1).transactions) {
-                        System.out.println("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp);
-                    }
+                    printBlock(chain.get(chain.size() - 1));
                     break;
                 default:
-                for (Block block : chain) {
-                    System.out.println("Block Number: " + block.header.blockNumber);
-                    System.out.println("Timestamp: " + block.header.timestamp);
-                    System.out.println("Previous Hash: " + block.header.previousHash);
-                    System.out.println("State Root: " + block.header.stateRoot);
-                    System.out.println("Transaction Root: " + block.header.transactionRoot);
-                    System.out.println("PoH Hash: " + block.header.pohHash);
-                    System.out.println("Leader Signature: " + block.header.leaderSignature);
-                    System.out.println("Transactions:");
-                    for (Transaction tx : block.transactions) {
-                        System.out.println("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp);
+                    for (Block block : chain) {
+                        printBlock(block);
                     }
-                    System.out.println();
-
-                }
-                break;
-
+                    break;
             }
+        }
+
+        private void printBlock(Block block) {
+            System.out.println("Block Number: " + block.header.blockNumber);
+            System.out.println("Block Hash: " + block.header.blockHash);
+            System.out.println("Timestamp: " + block.header.timestamp);
+            System.out.println("Previous Hash: " + block.header.previousHash);
+            System.out.println("State Root: " + block.header.stateRoot);
+            System.out.println("Transaction Root: " + block.header.transactionRoot);
+            System.out.println("PoH Hash: " + block.header.pohHash);
+            System.out.println("Leader Signature: " + block.header.leaderSignature);
+            System.out.println("Transactions:");
+            for (Transaction tx : block.transactions) {
+                System.out.println("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp);
+            }
+            System.out.println();
         }
     }
 
@@ -169,17 +180,14 @@ public class SandBox {
         // Elect a leader for block creation
         int epochNumber = 1;
         int epochCycle = 100000;
-        int numSlots = 500000 ;  // Realistic number of slots per epoch
-
+        int numSlots = 500000;  // Realistic number of slots per epoch
 
         System.out.println("Initializing Epoch " + epochNumber);
-        initializeEpoch(epochNumber,epochCycle, numSlots, validators);
+        initializeEpoch(epochNumber, epochCycle, numSlots, validators);
     }
 
     private static void initializeEpoch(int epochNumber, int epochCycle, int numSlots, List<Validator> validators) {
         Blockchain blockchain = new Blockchain();
-
-
 
         System.out.println("Epoch " + epochNumber + " started");
         System.out.println("Generating leader schedule...");
@@ -189,7 +197,8 @@ public class SandBox {
             System.out.println("Epoch " + epochNumber);
             System.out.println("Leader for slot " + slot + ": " + leader.getPublicKey());
             System.out.println("");
-            if(slot == 0){
+
+            if (slot == 0) {
                 // Create and add genesis block
                 Block genesisBlock = createBlock(0, null, blockchain.mempool, "genesisLeaderPublicKey");
                 blockchain.addBlock(genesisBlock);
@@ -203,8 +212,7 @@ public class SandBox {
                     e.printStackTrace();
                 }
                 System.out.println("");
-            }else if(slot != 0){
-
+            } else {
                 // Create transactions for the slot
                 blockchain.addTransaction(createTransaction("tx" + slot + "1", "Alice", "Bob", 10 + slot, "signature1"));
                 blockchain.addTransaction(createTransaction("tx" + slot + "2", "Bob", "Charlie", 5 + slot, "signature2"));
@@ -226,11 +234,9 @@ public class SandBox {
                 }
                 System.out.println("");
 
-
-
-                if(slot%epochCycle == 0){
+                if (slot % epochCycle == 0) {
                     // Introduce a delay of 400ms
-                    System.out.println("EPOCH "+ epochNumber +" DONE");
+                    System.out.println("EPOCH " + epochNumber + " DONE");
                     epochNumber++;
                     try {
                         Thread.sleep(10000);
@@ -240,13 +246,9 @@ public class SandBox {
                     System.out.println("");
                 }
             }
-
-
         }
         System.out.println("Done Scheduling");
-
     }
-
 
     private static Validator selectLeaderForSlot(List<Validator> validators, int slot) {
         // Calculate total stake
@@ -269,10 +271,10 @@ public class SandBox {
     }
 
     private static Block createBlock(int blockNumber, Block previousBlock, Mempool mempool, String leaderPublicKey) {
-        String previousHash = previousBlock == null ? "0" : Integer.toString(previousBlock.hashCode());
+        String previousHash = previousBlock == null ? "0" : previousBlock.header.blockHash;
         long timestamp = System.currentTimeMillis();
-        String stateRoot = "stateRoot";
-        String transactionRoot = "transactionRoot";
+        String stateRoot = "stateRoot";  // Placeholder for state root calculation
+        String transactionRoot = calculateMerkleRoot(mempool.getTransactions());
         String pohHash = generatePoH(previousHash, timestamp);
         String leaderSignature = signBlock(leaderPublicKey, pohHash);
 
@@ -305,8 +307,43 @@ public class SandBox {
     }
 
     private static String signBlock(String publicKey, String pohHash) {
-        // Placeholder for actual signature logic
+        // Placeholder for actual signature gic
         return publicKey + "_signed_" + pohHash;
+    }
+
+    private static String calculateMerkleRoot(List<Transaction> transactions) {
+        if (transactions.isEmpty()) {
+            return "";
+        }
+
+        List<String> tree = new ArrayList<>();
+        for (Transaction transaction : transactions) {
+            tree.add(hash(transaction.getId()));
+        }
+
+        while (tree.size() > 1) {
+            List<String> newTree = new ArrayList<>();
+            for (int i = 0; i < tree.size(); i += 2) {
+                if (i + 1 < tree.size()) {
+                    newTree.add(hash(tree.get(i) + tree.get(i + 1)));
+                } else {
+                    newTree.add(tree.get(i));
+                }
+            }
+            tree = newTree;
+        }
+        return tree.get(0);
+    }
+
+    private static String hash(String data) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(data.getBytes());
+            return bytesToHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 
     private static String bytesToHex(byte[] bytes) {
