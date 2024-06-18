@@ -404,8 +404,8 @@ public class SandBox {
 
         // Elect a leader for block creation
         int epochNumber = 1;
-        int epochCycle = 10;
-        int numSlots = 10;  // Realistic number of slots per epoch
+        int epochCycle = 50;
+        int numSlots = 100;  // Realistic number of slots per epoch
 
         System.out.println("Initializing Epoch " + epochNumber);
         initializeEpoch(epochNumber, epochCycle, numSlots, validators);
