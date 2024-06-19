@@ -6,7 +6,20 @@ import java.util.stream.Collectors;
 
 public class SandBox {
 
-    static class Validator {
+    public interface IValidator {
+        String getPublicKey();
+        int getStakedAmount();
+        List<SandBox.Block> getBlockchain();
+        void addBlock(SandBox.Block block);
+        String signBlock(String blockHash);
+        String getType();
+    }
+    
+
+
+
+
+    static class Validator implements IValidator{
         private String publicKey;
         private int stakedAmount;
         private List<Block> blockchain;
@@ -164,6 +177,14 @@ public class SandBox {
         Mempool mempool;
         List<Validator> validators; // Store all validators (public and ppe)
         Map<String, String> shardLocations; // Tracks shard locations
+        
+         public interface BlockPrintCallback {
+            void printBlockOutput(Block block, String output);
+           
+        }
+         
+   
+      
 
         public Blockchain(List<Validator> validators) {
             this.chain = new ArrayList<>();
@@ -180,20 +201,27 @@ public class SandBox {
             mempool.addTransaction(transaction);
         }
 
-        public void printBlockchain(String mode) {
+        public void printBlockchain(String mode, BlockPrintCallback callback) {
             switch (mode) {
+                
                 case "latestBlock":
                     printBlock(chain.get(chain.size() - 1));
+                    Block block = chain.get(chain.size() - 1);
+                    String blockOutput = printBlock(block);
+                    callback.printBlockOutput(block, blockOutput); 
                     break;
                 default:
-                    for (Block block : chain) {
-                        printBlock(block);
+                    
+                    for (Block blocks : chain) {
+                        printBlock(blocks);
+                        blockOutput = printBlock(blocks);
+                        callback.printBlockOutput(blocks, blockOutput); // Pas
                     }
                     break;
             }
         }
 
-        private void printBlock(Block block) {
+        private String printBlock(Block block) {
             //System.out.println("Block Number: " + block.header.blockNumber);
             System.out.println("Block Hash: " + block.header.blockHash);
             System.out.println("Timestamp: " + block.header.timestamp);
@@ -204,14 +232,36 @@ public class SandBox {
             System.out.println("PoH Value: " + block.header.pohValue);
             System.out.println("Leader Signature: " + block.header.leaderSignature);
             System.out.println("Transactions:");
+            
+            StringBuilder output = new StringBuilder();
+            output.append("Block Hash: " + block.header.blockHash + "\n");
+            output.append("Timestamp: " + block.header.timestamp + "\n");
+            output.append("Previous Hash: " + block.header.previousHash + "\n");
+            output.append("State Root: " + block.header.stateRoot + "\n");
+            output.append("Transaction Root: " + block.header.transactionRoot + "\n");
+            output.append("PoH Hash: " + block.header.pohHash + "\n");
+            output.append("PoH Value: " + block.header.pohValue + "\n");
+            output.append("Leader Signature: " + block.header.leaderSignature + "\n");
+            output.append("Transactions:\n");
+            
+            
             for (Transaction tx : block.transactions) {
                 System.out.println("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp);
+                 output.append("  TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp + "\n");
             }
             System.out.println("Attestation Signatures:");
+            output.append("Attestation Signatures:\n");
             for (String signature : block.attestationSignatures) {
                 System.out.println("  " + signature);
+                output.append("  " + signature + "\n");
             }
             System.out.println();
+            output.append("\n");
+            
+            
+            
+            return output.toString();
+           
         }
 
         public void shardAndStoreBlock(Block block) {
@@ -325,7 +375,7 @@ public class SandBox {
             }
         }
 
-        public void reconstructAndPrintBlockchain() {
+        public String reconstructAndPrintBlockchain() {
             System.out.println("Reconstructing the entire blockchain:");
 
             // Find the highest block number from shardLocations
@@ -335,12 +385,15 @@ public class SandBox {
                     .orElse(0); // Default to 0 if no shards found
 
             // Reconstruct and print each block
+            StringBuilder PPEOutput = new StringBuilder();
             for (int blockNumber = 0; blockNumber <= highestBlockNumber; blockNumber++) {
                 reconstructAndPrintBlock(blockNumber);
+                PPEOutput.append(reconstructAndPrintBlock(blockNumber)); 
             }
+            return PPEOutput.toString();
         }
 
-        public void reconstructAndPrintBlock(int blockNumber) {
+        public String reconstructAndPrintBlock(int blockNumber) {
             StringBuilder reconstructedBlockData = new StringBuilder();
 
             // Get shard IDs for the specified block number and sort them
@@ -369,8 +422,9 @@ public class SandBox {
             }
 
             System.out.println("Reconstructed Block Data:\n" + reconstructedBlockData.toString());
+            return "Reconstructed Block Data:\n" + reconstructedBlockData.toString();
         }
-
+      
     }
 
     // Main class
@@ -404,8 +458,8 @@ public class SandBox {
 
         // Elect a leader for block creation
         int epochNumber = 1;
-        int epochCycle = 50;
-        int numSlots = 100;  // Realistic number of slots per epoch
+        int epochCycle = 1000;
+        int numSlots = 10000;  // Realistic number of slots per epoch
 
         System.out.println("Initializing Epoch " + epochNumber);
         initializeEpoch(epochNumber, epochCycle, numSlots, validators);
@@ -428,8 +482,12 @@ public class SandBox {
                 Block genesisBlock = createBlock(0, null, blockchain.mempool, "genesisLeaderPublicKey");
                 blockchain.addBlock(genesisBlock);
 
-                blockchain.printBlockchain("latestBlock");
+                //blockchain.printBlockchain("latestBlock");
 
+                 blockchain.printBlockchain("latestBlock", (block, output) -> { 
+                   System.out.print("");
+                    System.out.println(output.toString()); 
+                });
                 // Introduce a delay of 400ms
                 try {
                     Thread.sleep(0);
@@ -466,11 +524,14 @@ public class SandBox {
                 }
                 // Shard and store the block data on PPE nodes
                 blockchain.shardAndStoreBlock(newBlock);
-                blockchain.printBlockchain("latestBlock");
-
+                //blockchain.printBlockchain("latestBlock");
+                 blockchain.printBlockchain("latestBlock", (block, output) -> { 
+                   System.out.print("");
+                    System.out.println(output.toString()); 
+                });
                 // Introduce a delay of 400ms
                 try {
-                    Thread.sleep(423);
+                    Thread.sleep(0);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -481,7 +542,7 @@ public class SandBox {
                     System.out.println("EPOCH " + epochNumber + " DONE");
                     epochNumber++;
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(2000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
