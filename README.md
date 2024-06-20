@@ -5,6 +5,10 @@
 
 TETARA is a blockchain network designed specifically for secure and efficient data sharing between banks and their customers. It leverages a sharding algorithm to distribute blockchain data across multiple nodes, including organizational (internal) nodes and end-device nodes (e.g., customer smartphones). This approach enables banks to share only relevant data with their customers, enhancing privacy while improving transaction speed and scalability.
 
+**Introducing TETA-SandBox:**
+![image](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/6493f10e-947d-47b7-80bb-f803bf2e3ec0)
+
+
 **Key Features:**
 
 * **Sharding Architecture:**  TETARA uses a sharding algorithm to divide the blockchain data into smaller, more manageable pieces, which are then distributed across multiple nodes. This significantly improves performance and scalability compared to traditional blockchain networks.
@@ -13,7 +17,7 @@ TETARA is a blockchain network designed specifically for secure and efficient da
 * **Data Sharing for End-Devices:**  TETARA enables banks to share relevant blockchain data with their customers' smartphones, reducing storage requirements on individual devices.
   
 ![TETARA CD-UML-01](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/c78083ce-2de5-46ab-8e4e-fd6062d84e51)
-![SOL](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/0dee782a-c979-4e62-adba-f942a6ec7196)
+![SandBox CD UML](https://github.com/Qyuzet/TETARA-Blockchain-network/assets/93258081/4716fee5-ee5e-42e2-bf2d-e855a8b84ae9)
 
 
 **Current Status:**
