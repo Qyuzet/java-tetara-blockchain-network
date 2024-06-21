@@ -265,6 +265,10 @@ public class SandBox {
          public interface totalTransactionDataCallback {
             void onTotalTransactionData(long output);
         }
+         
+         public interface BlockchainReconstructionCallback{
+             void onBlockchainReconstructed(String output);
+         }
 
         public void shardAndStoreBlock(Block block, totalTransactionDataCallback callback) {
             List<String> shards = splitBlockIntoShards(block, callback);
@@ -289,6 +293,7 @@ public class SandBox {
             // Shard 2 (and more): Transactions
             int shardSize = 0;
             int shardIndex = 2;
+            int totalTransactionDataSize = 0;
             StringBuilder transactionShard = new StringBuilder();
             for (Transaction tx : block.transactions) {
                 String transactionData = "TxID: " + tx.id + ", From: " + tx.from + ", To: " + tx.to + ", Amount: " + tx.amount + ", Timestamp: " + tx.timestamp;
@@ -321,6 +326,7 @@ public class SandBox {
                 }
                 attestationShard.append(signatureData).append(", ");
                 shardSize += signatureData.length();
+                totalTransactionDataSize += signatureData.length();
             }
             if (attestationShard.length() > 0) {
                 shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": Attestation Signatures: " + attestationShard.toString());
