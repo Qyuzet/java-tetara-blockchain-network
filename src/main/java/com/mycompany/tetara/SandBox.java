@@ -261,7 +261,7 @@ public class SandBox {
             return output.toString();
            
         }
-        
+
          public interface totalTransactionDataCallback {
             void onTotalTransactionData(long output);
         }
@@ -270,12 +270,11 @@ public class SandBox {
             List<String> shards = splitBlockIntoShards(block, callback);
             assignShardsToPPENodes(shards, block.header.blockNumber);
         }
-        
+
 
         private List<String> splitBlockIntoShards(Block block, totalTransactionDataCallback callback) {
             int maxShardSizeBytes = 1024; // 1 KB
             List<String> shards = new ArrayList<>();
-            long totalTransactionDataSize = 0; // Variable to store the total data size
 
             // Shard 1: Block Header
             shards.add("SBlock_" + block.header.blockNumber + "_1: Block Hash: " + block.header.blockHash +
@@ -302,9 +301,6 @@ public class SandBox {
                 }
                 transactionShard.append(transactionData).append(", ");
                 shardSize += transactionData.length();
-                // Update the total transaction data size
-                totalTransactionDataSize += transactionData.length(); 
-                
             }
             if (transactionShard.length() > 0) {
                 shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": " + transactionShard.toString());
@@ -329,8 +325,8 @@ public class SandBox {
             if (attestationShard.length() > 0) {
                 shards.add("SBlock_" + block.header.blockNumber + "_" + shardIndex + ": Attestation Signatures: " + attestationShard.toString());
             }
-            
-            callback.onTotalTransactionData(totalTransactionDataSize); 
+
+            callback.onTotalTransactionData(totalTransactionDataSize);
             return shards;
         }
 
@@ -382,9 +378,6 @@ public class SandBox {
                 ppeNode.blockchain.add(new Block(null, shardTransactions));
             }
         }
-        public interface BlockchainReconstructionCallback {
-            void onBlockchainReconstructed(String output);
-        }
 
         public void reconstructAndPrintBlockchain(BlockchainReconstructionCallback callback) {
             System.out.println("Reconstructing the entire blockchain:");
@@ -400,8 +393,8 @@ public class SandBox {
             for (int blockNumber = 0; blockNumber <= highestBlockNumber; blockNumber++) {
                 //reconstructAndPrintBlock(blockNumber);
                 String reconstructedBlockData = reconstructAndPrintBlock(blockNumber);
-                callback.onBlockchainReconstructed(reconstructAndPrintBlock(blockNumber).toString()); 
-                //PPEOutput.append(reconstructAndPrintBlock(blockNumber)); 
+                callback.onBlockchainReconstructed(reconstructAndPrintBlock(blockNumber).toString());
+                //PPEOutput.append(reconstructAndPrintBlock(blockNumber));
             }
             //return PPEOutput.toString();
         }
