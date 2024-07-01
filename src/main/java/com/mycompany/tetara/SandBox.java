@@ -452,7 +452,7 @@ public class SandBox {
         validatorStakes.put("Validator7", 2000);
         validatorStakes.put("Validator8", 2500);
         validatorStakes.put("Validator9", 1500);
-        validatorStakes.put("Validator10", 300);
+        validatorStakes.put("Validator10", 200);
 
         // Add PPE nodes
         validatorStakes.put("ppe_Node1", 100); // Example PPE node stakes
