@@ -11,7 +11,7 @@ TETARA is a blockchain network designed specifically for secure and efficient da
 
 **Key Features:**
 
-* **Sharding Architecture:**  TETARA uses a sharding algorithm to divide the blockchain data into smaller, more manageable pieces, which are then distributed across multiple nodes. This significantly improves performance and scalability compared to traditional blockchain networks.
+* **Sharding Architecture:**  TETARA uses a sharding algorithm to divide the blockchain data into smaller, more manageable pieces, which are then distributed across multiple nodes. This significantly improves performance and scalability compared to traditional blockchain networks..
 * **Private and Public Transactions:**  TETARA supports both private transactions, which are validated within a specific organization (e.g., a bank), and public transactions, which are validated across the entire network. 
 * **Multiple Organization Support:**  The network is designed to accommodate multiple banking institutions, each with their own set of internal nodes and customer end-device nodes.
 * **Data Sharing for End-Devices:**  TETARA enables banks to share relevant blockchain data with their customers' smartphones, reducing storage requirements on individual devices.
