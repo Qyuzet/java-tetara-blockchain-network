@@ -1,7 +1,7 @@
 # TETARA-Blockchain Network
 
 **HYBRID MODULAR BLOCKCHAIN : A NETWORK FOR PRIVATE AND PUBLIC TRANSACTION**
-![TETARA-WHT-01](https://github.com/Qyuzet/TETARA-OmniX-blockchain-network/assets/93258081/81f19d7e-ff5d-4147-8b42-cab8785e36ca)
+![TETARA-WHT-01](https://github.com/Qyuzet/TETARA-OmniX-blockchain-network/assets/93258081/81f19d7e-ff5d-4147-8b42-cab8785e36ca).
 
 TETARA is a blockchain network designed specifically for secure and efficient data sharing between banks and their customers. It leverages a sharding algorithm to distribute blockchain data across multiple nodes, including organizational (internal) nodes and end-device nodes (e.g., customer smartphones). This approach enables banks to share only relevant data with their customers, enhancing privacy while improving transaction speed and scalability.
 
